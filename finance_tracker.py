@@ -4,7 +4,7 @@ from tkinter import ttk, messagebox
 from datetime import date
 import os
 
-CSV_FILE = "income_total.csv"
+CSV_FILE = "income_total2.csv"
 
 #Main App Class
 class FinanceApp:
@@ -14,7 +14,11 @@ class FinanceApp:
 
         self.columns = ["Amount", "Date", "Source"]
         self.df = self.load_data()
-        self.tax_years = ['All','2023/2024','2024/2025','2025/2026']
+        tax_year_list = sorted(set(i.year for i in self.df.Date))
+        self.tax_years = ["All"] + [f"{tax_year_list[i]}/{tax_year_list[i + 1]}" for i in range(len(tax_year_list) - 1)]
+
+
+        #self.tax_years = ['All','2023/2024','2024/2025','2025/2026']
 
         self.create_widgets()
         self.populate_table_all()
