@@ -14,11 +14,9 @@ class FinanceApp:
 
         self.columns = ["Amount", "Date", "Source"]
         self.df = self.load_data()
+        #Get tax year pairs present in CSV file
         tax_year_list = sorted(set(i.year for i in self.df.Date))
         self.tax_years = ["All"] + [f"{tax_year_list[i]}/{tax_year_list[i + 1]}" for i in range(len(tax_year_list) - 1)]
-
-
-        #self.tax_years = ['All','2023/2024','2024/2025','2025/2026']
 
         self.create_widgets()
         self.populate_table_all()
@@ -29,7 +27,7 @@ class FinanceApp:
             df = pd.read_csv(CSV_FILE)
             if set(self.columns).issubset(df.columns):
                 #Convert to datetime
-                df['Date'] = pd.to_datetime(df['Date'], format='%d/%m/%y',errors='coerce').dt.date
+                df['Date'] = pd.to_datetime(df['Date'], format='%d/%m/%y',errors='coerce')
                 return df[self.columns]
             else:
                 messagebox.showerror("Error", f"{CSV_FILE} has incorrect columns.")
@@ -58,6 +56,7 @@ class FinanceApp:
         #Buttons
         tk.Button(frame, text="Add Entry", command=self.add_entry).grid(row=1, column=3, padx=10)
         #tk.Button(frame, text="Summary",command=self.show_summary).grid(row=2, column=3, padx=10)
+        
         #Dropdown
         self.view_option = tk.StringVar(value="All")
         tk.Label(frame,text="View:").grid(row=2,column=0,sticky="w")
@@ -88,6 +87,14 @@ class FinanceApp:
 
         for row in self.df.itertuples(index=False):
             self.tree.insert("", "end", values=row)
+
+    #Populate main table by tax year
+    def populate_table_by_tax_year(self,df):
+        for row in self.tree.get_children():
+            self.tree.delete(row) #Clear rows
+
+        for row in df.itertuples(index=False):
+            self.tree.insert("","end",values=row) 
     
     #populate summary section
     def update_summary(self):
@@ -105,12 +112,25 @@ class FinanceApp:
         for key, value in summary_data:
             self.summary_tree.insert("","end",values=(key,value))        
 
+    #Deals with filtering data based on dropdown selection of tax year
     def on_view_change(self, selection):
         if selection == "All":
-            print("what?")
+            
+            filtered_df = self.df
+            
+        elif "/" in selection:#Extract start and end dates of UK tax year
+            first_year,second_year = selection.split('/')
+            start_date = pd.Timestamp(f'{first_year}-04-06')
+            end_date = pd.Timestamp(f'{second_year}-04-05')
+            #print(start_date)
+            #print(end_date)
+            #Filter data based on tax year
+            filtered_df = self.df[(self.df['Date'] >= start_date) & (self.df['Date'] <= end_date)]
         else:
-            print('oh...')
-    
+            filtered_df = self.df
+
+        self.populate_table_by_tax_year(filtered_df)
+
 
     def add_entry(self):
         values = [self.fields["Amount"].get().strip(),
