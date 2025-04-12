@@ -78,7 +78,7 @@ class FinanceApp:
         self.summary_tree.column("value", width=150)
         self.summary_tree.pack(pady=(0, 10), fill="x")
 
-        self.update_summary()
+        self.update_summary(self.df)
 
     #Populate main table 
     def populate_table_all(self):
@@ -97,15 +97,15 @@ class FinanceApp:
             self.tree.insert("","end",values=row) 
     
     #populate summary section
-    def update_summary(self):
+    def update_summary(self,df):
         for row in self.summary_tree.get_children():
             self.summary_tree.delete(row)
 
-        total_income = self.df['Amount'].sum()
+        total_income = df['Amount'].sum()
         other_stuff = 35096
         summary_data = [
             ("Total Income", f"£{total_income:,.2f}"),
-            ("Other stuff", f"£{other_stuff:,.2f}") 
+            #("Other stuff", f"£{other_stuff:,.2f}") 
 
         ]
 
@@ -130,8 +130,9 @@ class FinanceApp:
             filtered_df = self.df
 
         self.populate_table_by_tax_year(filtered_df)
+        self.update_summary(filtered_df)
 
-
+    #Add new enties #AS YET UNEXAMINED CODE FROM CHATBOT
     def add_entry(self):
         values = [self.fields["Amount"].get().strip(),
                   self.fields["Date (YYYY-MM-DD)"].get().strip(),
