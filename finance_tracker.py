@@ -18,8 +18,9 @@ class FinanceApp:
         self.columns = ["Amount", "Date", "Source"]
         self.df = self.load_data(CSV_FILE)
         #Get tax year pairs present in CSV file
-        tax_year_list = sorted(set(i.year for i in self.df.Date))
-        self.tax_years = ["All"] + [f"{tax_year_list[i]}/{tax_year_list[i + 1]}" for i in range(len(tax_year_list) - 1)]
+        #tax_year_list = sorted(set(i.year for i in self.df.Date))
+        #self.tax_years = ["All"] + [f"{tax_year_list[i]}/{tax_year_list[i + 1]}" for i in range(len(tax_year_list) - 1)]
+        self.get_tax_years(self.df)
 
         self.create_widgets()
         self.populate_table_all()
@@ -51,8 +52,8 @@ class FinanceApp:
         Initialize widgets. I.e. Buttons, tables, etc.
 
         """
-        frame = tk.Frame(self.root)
-        frame.pack(pady=10)
+        self.frame = tk.Frame(self.root)
+        self.frame.pack(pady=10)
 
         #Adding new data
         '''self.fields = {}
@@ -66,14 +67,11 @@ class FinanceApp:
 
         #Buttons
         #tk.Button(frame, text="Add Entry", command=self.add_entry).grid(row=1, column=3, padx=10)
-        tk.Button(frame, text="Load CSV: Income", command=self.select_file).grid(row=0, column=4)#pady=10)
+        tk.Button(self.frame, text="Load CSV: Income", command=self.select_file).grid(row=0, column=4)#pady=10)
         
         #Dropdown
-        self.view_option = tk.StringVar(value="Tax Year")
-        #tk.Label(frame,text="View Tax Year: ").grid(row=0,column=0,sticky="e")
-        option_menu = tk.OptionMenu(frame,self.view_option,*self.tax_years, command=self.on_view_change_main)
-        option_menu.grid(row=0, column=1, sticky="w")
-
+        self.create_load_dropdown()
+        
         #Main table
         self.tree = ttk.Treeview(self.root, columns=self.columns, show="headings")
         for col in self.columns:
@@ -81,19 +79,8 @@ class FinanceApp:
             self.tree.column(col, width=150)
         self.tree.pack(pady=10, fill="both", expand=True)
 
-        """
-        #Summarary table
-        self.summary_tree = ttk.Treeview(self.root, columns=("label", "value"), show="headings", height=3)
-        self.summary_tree.heading("label", text="Summary")
-        self.summary_tree.heading("value", text="Amount")
-        self.summary_tree.column("label", width=200)
-        self.summary_tree.column("value", width=150)
-        self.summary_tree.pack(pady=(0, 10), fill="x")
-        """
         self.create_summary_table()
-        self.update_summary(self.df)
-    
-
+        
     def populate_table_all(self):
         """
         Initialises main table.
@@ -120,7 +107,10 @@ class FinanceApp:
             self.tree.insert("","end",values=row) 
     
     def create_summary_table(self):
-        #Summarary table
+        """
+        Creates a seperate table for total summations.
+
+        """
         self.summary_tree = ttk.Treeview(self.root, columns=("label", "value"), show="headings", height=3)
         self.summary_tree.heading("label", text="Summary")
         self.summary_tree.heading("value", text="Amount")
@@ -128,15 +118,12 @@ class FinanceApp:
         self.summary_tree.column("value", width=150)
         self.summary_tree.pack(pady=(0, 10), fill="x")
 
-        #self.update_summary(self.df)
-
     def update_summary(self,df):
         """
         Populates and updates summary table.
 
         Args:
             df(DataFrame)
-
         """
         for row in self.summary_tree.get_children():
             self.summary_tree.delete(row)
@@ -150,7 +137,38 @@ class FinanceApp:
         ]
 
         for key, value in summary_data:
-            self.summary_tree.insert("","end",values=(key,value))        
+            self.summary_tree.insert("","end",values=(key,value))
+
+    def get_tax_years(self,df):
+        tax_year_list = sorted(set(i.year for i in self.df.Date))
+        self.tax_years = ["All"] + [f"{tax_year_list[i]}/{tax_year_list[i + 1]}" for i in range(len(tax_year_list) - 1)]
+
+    def create_load_dropdown(self):
+        """
+        Creates and loads the dropdown tax year selector.
+
+        Args:
+            frame(Frame)
+        """
+        self.view_option = tk.StringVar(value="Tax Year")
+        #tk.Label(frame,text="View Tax Year: ").grid(row=0,column=0,sticky="e")
+        self.option_menu = tk.OptionMenu(self.frame,self.view_option,*self.tax_years, command=self.on_view_change_main)
+        self.option_menu.grid(row=0, column=1, sticky="w") 
+
+    def update_dropdown(self):
+        # Clear existing options from the OptionMenu's menu
+        self.option_menu['menu'].delete(0, 'end')
+
+        # Repopulate the menu with updated tax_years
+        for year in self.tax_years:
+            self.option_menu['menu'].add_command(
+                label=year,
+                command=lambda value=year: self.on_view_change_main(value)
+            )
+
+        # Reset the selected value
+        self.view_option.set("Tax Year")
+  
 
     def on_view_change_main(self, selection):
         """
@@ -187,7 +205,10 @@ class FinanceApp:
         )
         if file_path:
             self.df = self.load_data(file_path)
+            self.get_tax_years(self.df)
+            self.update_dropdown()
             self.populate_table_all()
+            
             self.update_summary(self.df)
 
 
